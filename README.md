@@ -5,6 +5,7 @@ A custom react-native animated text-input.
 # Installation
 
 `npm i react-native-animated-text-input`
+`yarn add react-native-animated-text-input`
 
 ## Example
 
@@ -14,7 +15,7 @@ A custom react-native animated text-input.
 import React from "react";
 import { useState } from "react";
 import { View } from "react-native";
-import AnimatedTextInput from "./src/components/AnimatedTextInput";
+import AnimatedTextInput from "@big-tam/react-native-animated-text-input";
 
 const lightBlue = "#45A6E5";
 const offWhite = "#e1e1e1";
