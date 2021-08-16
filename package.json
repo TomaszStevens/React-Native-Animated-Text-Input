@@ -1,5 +1,5 @@
 {
-  "name": "react-native-animated-text-input",
+  "name": "@big-tam/react-native-animated-text-input",
   "version": "1.0.0",
   "description": "A simple animated text input for react-native",
   "main": "index.tsx",
@@ -27,5 +27,8 @@
   "bugs": {
     "url": "https://github.com/TomaszStevens/React-Native-Animated-Text-Input/issues"
   },
-  "homepage": "https://github.com/TomaszStevens/React-Native-Animated-Text-Input#readme"
+  "homepage": "https://github.com/TomaszStevens/React-Native-Animated-Text-Input#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }
