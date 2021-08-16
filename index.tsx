@@ -71,23 +71,11 @@ const AnimatedTextInput = React.forwardRef<TextInput, AnimatedInputProps>(
     const placeholderAnimationProgress = useSharedValue(text === "" ? 0 : 1);
 
     useEffect(() => {
-      // enter delete button
-      if (text === "") deleteButtonAnimationProgress.value = withTiming(0);
-      // exit delete button
-      else deleteButtonAnimationProgress.value = withTiming(1);
-      if (isFocused) {
-        // set placeholder to upper position
-        placeholderAnimationProgress.value = withDelay(
-          20,
-          withTiming(1, { duration: 350 })
-        );
-      } else if (text === "") {
-        // set placeholder to default position when loses focus and text-field is empty
-        placeholderAnimationProgress.value = withDelay(
-          20,
-          withTiming(0, { duration: 350 })
-        );
-      }
+      deleteButtonAnimationProgress.value = withTiming(text === "" ? 0 : 1);
+      placeholderAnimationProgress.value = withDelay(
+        20,
+        withTiming(text === "" && !isFocused ? 0 : 1, { duration: 350 })
+      );
     }, [isFocused, text]);
 
     // ---> Functions
