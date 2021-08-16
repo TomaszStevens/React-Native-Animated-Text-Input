@@ -1,6 +1,6 @@
 {
   "name": "@big-tam/react-native-animated-text-input",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple animated text input for react-native",
   "main": "index.tsx",
   "peerDependencies": {
