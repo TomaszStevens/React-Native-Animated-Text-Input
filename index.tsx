@@ -1,9 +1,11 @@
-import React, { useEffect, useState, Ref } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
+  View,
   TextInput,
   TouchableWithoutFeedback,
-  View,
   ViewStyle,
+  TextInputFocusEventData,
+  NativeSyntheticEvent,
 } from "react-native";
 import Animated, {
   Extrapolate,
@@ -14,77 +16,178 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Entypo } from "@expo/vector-icons";
-import { Props } from "./props";
+import {
+  DeleteButtonProps,
+  PlaceholderProps,
+  AnimatedInputProps,
+} from "./prop-types";
 
 const AnimatedIcon = Animated.createAnimatedComponent(Entypo);
 
-const AnimatedTextInput: React.ForwardRefRenderFunction<TextInput, Props> = (
-  {
-    placeholder,
-    placeholderTextColor,
-    backgroundColor,
-    borderColor,
-    style,
-    ...rest
-  }: Props,
-  ref: Ref<TextInput>
-) => {
-  const [text, setText] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
+const AnimatedTextInput = React.forwardRef<TextInput, AnimatedInputProps>(
+  (
+    {
+      placeholder,
+      placeholderTextColor,
+      backgroundColor,
+      borderColor,
+      deleteIconColor,
+      style,
+      containerStyle,
+      placeholderTextStyle,
+      defaultValue,
+      onChangeText,
+      onFocus,
+      onBlur,
+      ...rest
+    }: AnimatedInputProps,
+    ref
+  ) => {
+    const [text, setText] = useState(defaultValue ?? "");
+    const [isFocused, setIsFocused] = useState(false);
 
-  const clearText = () => setText("");
+    const inputRef = ref ?? useRef<TextInput>(null);
 
-  const deleteButtonAnimationProgress = useSharedValue(0);
-  const placeholderAnimationProgress = useSharedValue(0);
+    const styles = {
+      container: {
+        borderColor: borderColor,
+        borderWidth: 1,
+        height: 60,
+        fontSize: 16,
+        borderRadius: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        ...containerStyle,
+      } as ViewStyle,
+      textInput: {
+        fontSize: 16,
+        flex: 1,
+        paddingHorizontal: 20,
+      },
+    };
 
-  useEffect(() => {
-    if (text === "") deleteButtonAnimationProgress.value = withTiming(0);
-    else deleteButtonAnimationProgress.value = withTiming(1);
-    if (isFocused) {
-      placeholderAnimationProgress.value = withDelay(
-        20,
-        withTiming(1, { duration: 350 })
-      );
-    } else if (text === "") {
-      placeholderAnimationProgress.value = withDelay(
-        20,
-        withTiming(0, { duration: 350 })
-      );
-    }
-  }, [isFocused, text]);
+    // ---> Animations
+    const deleteButtonAnimationProgress = useSharedValue(text === "" ? 0 : 1);
+    const placeholderAnimationProgress = useSharedValue(text === "" ? 0 : 1);
 
-  // FIXME: Fix usetheme colors
+    useEffect(() => {
+      // enter delete button
+      if (text === "") deleteButtonAnimationProgress.value = withTiming(0);
+      // exit delete button
+      else deleteButtonAnimationProgress.value = withTiming(1);
+      if (isFocused) {
+        // set placeholder to upper position
+        placeholderAnimationProgress.value = withDelay(
+          20,
+          withTiming(1, { duration: 350 })
+        );
+      } else if (text === "") {
+        // set placeholder to default position when loses focus and text-field is empty
+        placeholderAnimationProgress.value = withDelay(
+          20,
+          withTiming(0, { duration: 350 })
+        );
+      }
+    }, [isFocused, text]);
+
+    // ---> Functions
+    const focusInput = () => {
+      // @ts-ignore
+      inputRef?.current?.focus();
+    };
+    const handlePressDelete = () => {
+      handleChangeText("");
+      // @ts-ignore
+      inputRef?.current?.focus();
+    };
+    const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      setIsFocused(true);
+      onFocus?.(e);
+    };
+    const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      setIsFocused(false);
+      onBlur?.(e);
+    };
+    const handleChangeText = (text: string) => {
+      setText(text);
+      onChangeText?.(text);
+    };
+
+    return (
+      <TouchableWithoutFeedback onPress={focusInput}>
+        <View style={styles.container}>
+          <TextInput
+            {...rest}
+            placeholder="" // force native placeholder to be empty string
+            style={[styles.textInput, style]}
+            ref={inputRef}
+            value={text}
+            onChangeText={handleChangeText}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+          <DeleteButton
+            {...{
+              handlePressDelete,
+              deleteIconColor,
+              deleteButtonAnimationProgress,
+            }}
+          />
+          <Placeholder
+            {...{
+              placeholder,
+              placeholderTextColor,
+              placeholderTextStyle,
+              placeholderAnimationProgress,
+              backgroundColor,
+            }}
+          />
+        </View>
+      </TouchableWithoutFeedback>
+    );
+  }
+);
+
+const DeleteButton = ({
+  deleteButtonAnimationProgress,
+  deleteIconColor,
+  handlePressDelete,
+}: DeleteButtonProps) => {
+  const style = useAnimatedStyle(() => ({
+    marginRight: 14,
+    opacity: interpolate(deleteButtonAnimationProgress.value, [0, 1], [0, 1]),
+    transform: [
+      {
+        translateX: interpolate(
+          deleteButtonAnimationProgress.value,
+          [0, 1],
+          [8, 0]
+        ),
+      },
+    ],
+  }));
+
+  return (
+    <TouchableWithoutFeedback onPress={handlePressDelete}>
+      <Animated.View style={style}>
+        <AnimatedIcon
+          name="circle-with-cross"
+          size={24}
+          color={deleteIconColor}
+        />
+      </Animated.View>
+    </TouchableWithoutFeedback>
+  );
+};
+
+const Placeholder = ({
+  placeholder,
+  placeholderTextColor,
+  placeholderTextStyle,
+  placeholderAnimationProgress,
+  backgroundColor,
+}: PlaceholderProps) => {
   const styles = {
-    container: {
-      //TODO:
-      borderColor: borderColor,
-      borderWidth: 1,
-      height: 60,
-      fontSize: 16,
-      borderRadius: 10,
-      width: 300,
-      margin: 5,
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    textInput: {
-      fontSize: 16,
-      flex: 1,
-      paddingHorizontal: 20,
-    },
-    deleteButtonStyle: useAnimatedStyle(() => ({
-      marginRight: 14,
-      opacity: interpolate(deleteButtonAnimationProgress.value, [0, 1], [0, 1]),
-      transform: [
-        {
-          translateX: interpolate(
-            deleteButtonAnimationProgress.value,
-            [0, 1],
-            [8, 0]
-          ),
-        },
-      ],
-    })),
     placeholderContainerStyle: useAnimatedStyle(() => ({
       position: "absolute",
       backgroundColor: backgroundColor ?? "black",
@@ -105,8 +208,7 @@ const AnimatedTextInput: React.ForwardRefRenderFunction<TextInput, Props> = (
           translateY: interpolate(
             placeholderAnimationProgress.value,
             [0, 1],
-            [0.765, -28],
-            Extrapolate.CLAMP
+            [0.765, -28]
           ),
         },
         { translateX: 20 },
@@ -117,46 +219,25 @@ const AnimatedTextInput: React.ForwardRefRenderFunction<TextInput, Props> = (
       fontSize: interpolate(
         placeholderAnimationProgress.value,
         [0, 1],
-        [15.5, 11],
-        Extrapolate.CLAMP
+        [15.5, 11]
       ),
+      ...placeholderTextStyle,
     })),
   };
 
   return (
-    <TouchableWithoutFeedback onPress={() => ref?.current?.focus()}>
-      <View style={styles.container as ViewStyle}>
-        <TextInput
-          {...rest}
-          placeholder=""
-          style={[styles.textInput, style]}
-          ref={ref}
-          value={text}
-          onChangeText={setText}
-          onSubmitEditing={rest?.onSubmitEditing}
-          onFocus={(e) => {
-            setIsFocused(true);
-            rest?.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setIsFocused(false);
-            rest?.onBlur?.(e);
-          }}
-        />
-
-        <TouchableWithoutFeedback onPress={clearText}>
-          <Animated.View style={styles.deleteButtonStyle}>
-            <AnimatedIcon name="circle-with-cross" size={24} color="#45A6E5" />
-          </Animated.View>
-        </TouchableWithoutFeedback>
+    <>
+      {placeholder && placeholder !== "" ? (
         <Animated.View style={styles.placeholderContainerStyle}>
           <Animated.Text style={styles.placeholderStyle}>
             {placeholder}
           </Animated.Text>
         </Animated.View>
-      </View>
-    </TouchableWithoutFeedback>
+      ) : (
+        <></>
+      )}
+    </>
   );
 };
 
-export default React.forwardRef(AnimatedTextInput);
+export default AnimatedTextInput;
